@@ -1,11 +1,17 @@
 /*
+
+work on line 347
+
 char *ctime(const time_t *time);
 This returns a pointer to a string of the form day month year hours:minutes:seconds year\n\0.
 
 * Idea to keep extra features hidden from stdout and instead written in the readme 
 
-Needs to be able to import file
-Priorities other than numbers (ASAP) etc
+* Probably need to store date info in case exported to file, wait a day, then import to program. Probably means we need timestamp of file modification
+
+(#) Needs to be able to import file
+(#) Priorities other than numbers (ASAP) etc
+Need to be able to have priorities that contain a number somewhere (assume there is only 1)
 Edit priorities option
 Take timestamp from when user makes a relevant request (to add, display or update)
 (#) Needs file to store tasks, 
@@ -52,13 +58,13 @@ class Element
 		hasCharNumPriority = false;
 	}
 
-	Element(string s)
+	Element(string s) // ^# case
 	{
 		hasNumPriority = true;
 		hasCharNumPriority = true;
 	}
 
-	Element(int a)
+	Element(int a) // pure string case
 	{
 		hasNumPriority = false;
 		hasCharNumPriority = false;
@@ -103,10 +109,12 @@ void importFile(string fileName)
 {
 	string inputLine;
 	ifstream infile;
-	infile.open ("scheddata.txt");
+	//infile.open ("scheddata.txt");
+	infile.open(fileName);
      while(!(infile.eof()))
      {
 	    getline(infile,inputLine);
+	    cout << inputLine << endl;
 	    if(inputLine[0] == '(') //  we are at the first important line of the file
 	    {	// need to see if priority is an integer, make a new element object, and assign priority and description. Note that items will be sorted.
 	      	// could also take care of case where items are not sorted
@@ -122,7 +130,7 @@ void importFile(string fileName)
 				j++;
 		  	} // while
 
-		  	if(!isNumber(temp)) // check if priority is a pure number
+		  	if(temp == "" || !isNumber(temp)) // check if priority is a pure number
 		    	isNumberPriority = false;
 
 		  	if(isNumberPriority) // if priority is a pure number
@@ -138,7 +146,7 @@ void importFile(string fileName)
 				arr.push_back(e);
 		  	} // if
 		  	
-		  	else if(isNumber(temp.substr(1,temp.length() - 1))) // ^# case
+		  	else if(temp != "" && isNumber(temp.substr(1,temp.length() - 1))) // ^# case
 		  	{
 		  		// create new element with ^# priority and the description found in the rest of inputline
 		  		stringstream geek(temp.substr(1,temp.length() - 1));
@@ -150,12 +158,17 @@ void importFile(string fileName)
 		  		e.numDays = x;
 		  		e.priority = temp.substr(0,1);
 		  		arr.push_back(e);
-		  	}
+		  	} // else if
 
 		  	else
 		  	{ 
 		  		// create new element with other priority and the description found in the rest of inputLine
-		  	}
+		  		ep = new Element(1);
+		  		e = *ep;
+		  		e.taskDescr = inputLine.substr(j+2);
+		  		e.priority = temp;
+		  		arr.push_back(e);
+		  	} // else
 		  		
 		} // if
      } // while  	
@@ -196,6 +209,20 @@ void displayItemNumbers()
 	cout << "\n\n\n\n\n\n\n\n" << endl;
 } // displayItemNumbers()
 
+void addCharNumElement(string priority, int dueDate, string descr)
+{
+
+} // addCharNumElement()
+
+void addCharElement(string priority, string descr)
+{
+	ep = new Element(1);
+	e = *ep;
+	e.priority = priority;
+	e.taskDescr = descr;
+	arr.insert(arr.begin(), e);
+} // addCharElement()
+
 
 int main(int argc, char* argv[])
 {
@@ -229,6 +256,7 @@ int main(int argc, char* argv[])
 	
 
 	int dueDate;
+	string dueDateStr;
 	string taskDescr;
 	string fullTaskDescr;
 	string element;
@@ -254,6 +282,7 @@ int main(int argc, char* argv[])
 
 	int inserted;
 	bool deleted;
+	bool charnum;
 
 	cout << "\nMain Menu\n1) Display Schedule\n2) Add Item\n3) Remove Item\n4) Update Item\n" << endl;
 	cin >> command;
@@ -282,17 +311,24 @@ int main(int argc, char* argv[])
 			outputFile << "\n\n\n\n" << "*******************SCHEDULE*************************\n\n" << endl;
 		    for(int i = 0; i < arr.size(); i++)
 		    {
-		    	if(arr[i].hasCharNumPriority && arr[i].hasNumPriority) // ^# case
+		    	if(arr[i].hasCharNumPriority && arr[i].hasNumPriority) // ^# case  **can make this come after the current else if and only check if it has CharNumPriority
 		    	{
 		    		cout << "(" << arr[i].priority << arr[i].numDays << ") " << arr[i].taskDescr << endl; // print priority, number of days, then task description in proper format
 		    		outputFile << "(" << arr[i].priority << arr[i].numDays << ") " << arr[i].taskDescr << endl;
-		    	}
+		    	} // if
+
+		    	else if(!arr[i].hasNumPriority)
+		    	{
+		    		cout << "(" << arr[i].priority << ") " << arr[i].taskDescr << endl; // print priority then task description in proper format
+		    		outputFile << "(" << arr[i].priority << ") " << arr[i].taskDescr << endl;
+		    	} // else if
+
 		    	else
 		    	{	
 		    		cout << "(" << arr[i].numDays << ") " << arr[i].taskDescr << endl; // print number of days, then task description in proper format
 		    		outputFile << "(" << arr[i].numDays << ") " << arr[i].taskDescr << endl;
-		    	}
-		    }
+		    	} // else
+		    } // for
 		    cout << "\n\n\n\n\n\n\n\n" << endl;
 		    outputFile << "\n\n\n\n\n\n\n\n" << endl;
 		    outputFile.close();
@@ -307,7 +343,7 @@ int main(int argc, char* argv[])
 			//std::cin.getline(cin,sizeof(taskDescr));
 
 			cout << "Input due date of task in format DDMMYYYY" << endl;
-			cin >> dueDate;
+			cin >> dueDateStr;
 
 			now = time(0);                                        // get current time
 		    ltm = localtime(&now); // How exactly does this work?
@@ -317,6 +353,7 @@ int main(int argc, char* argv[])
 
 		    // RACE CONDITION POTENTIAL if this runs before item was inserted -> actually only the date when calculations happen is important
 		    // this makes everything in terms of the date we just calculated
+		    // Dates are determined by moment of user action
 		    if(currentDay != dd || currentMonth != mm || currentYear != yyyy)
 		    {
 		    	updateSched(computejdn(dd, mm, yyyy) - computejdn(currentDay, currentMonth, currentYear));
@@ -325,8 +362,32 @@ int main(int argc, char* argv[])
 		    	currentYear = yyyy;
 		    } // ehhh just set current times when starts, and update as you go through? if nothing entered, update doesnt do anything -> fine
 
-		    // dueDate is an integer, need to have it begin as a string to allow for special inputs
-		    //if(dueDate == )
+		    charnum = false;
+		    // dueDate is a string, check if it is a ^# or pure string case (that is, if it is not a pure number)
+		    if(!isNumber(dueDateStr))
+		    { 
+		    	charnum = true;
+		        // dueDate is not a string, so check if it is ^# case. If not, it is a pure string
+		    	if(isNumber(dueDateStr.substr(1))) // ^# case
+		    	{
+		    		// convert dueDateStr.substr(1) into an int, assign this to a new element's numdays, assign dueDateStr[0] to e's priority, and rest to descr
+		    		stringstream geek(dueDateStr.substr(1)); // convert string to int						
+					geek >> dueDate;					 // ""
+					//addCharNumElement(dueDateStr.substr(0,1), dueDate, taskDescr);
+					//break; // breaks out of this insertion request
+		    	}
+		    	else // pure string case
+		    	{
+		    		addCharElement(dueDateStr, taskDescr);
+		    		break;
+		    	}
+		    } // if
+
+		    // convert dueDateStr to int if we didnt partially already above in the ^# case
+		    if(!charnum){ 
+		    stringstream geek(dueDateStr); // convert string to int
+			geek >> dueDate;		
+			}
 
 		    // convert current time to julian day 
 		  	jdnstart = computejdn(dd, mm, yyyy);
@@ -346,6 +407,11 @@ int main(int argc, char* argv[])
 			e = *ep;
 			e.taskDescr = taskDescr;
 			e.numDays = jdnend - jdnstart;
+			if(charnum) // ^# case
+			{
+				e.priority = dueDateStr.substr(0,1);
+				e.hasCharNumPriority = true;
+			}
 
 			//arr.push_back(element);
 			inserted = 0;
