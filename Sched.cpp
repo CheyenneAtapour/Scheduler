@@ -2,14 +2,17 @@
 char *ctime(const time_t *time);
 This returns a pointer to a string of the form day month year hours:minutes:seconds year\n\0.
 
+* Idea to keep extra features hidden from stdout and instead written in the readme 
+
+Needs to be able to import file
+Priorities other than numbers (ASAP) etc
+Edit priorities option
 Take timestamp from when user makes a relevant request (to add, display or update)
-Needs file to store tasks, 
+(#) Needs file to store tasks, 
 Needs to take white spaces in input task descriptions, 
 (#) Needs to update days remaining on display 
 (#) Make option to display line numbers for editing
 Swap option using line numbers?
-Priorities other than numbers (ASAP) etc
-Edit priorities option
 Need to check against bad inputs - letters other than 'd' for deleting delete 0th item? numbers greater than size of arr give segfault 
 */
 
@@ -22,6 +25,7 @@ Need to check against bad inputs - letters other than 'd' for deleting delete 0t
 #include <ctime>
 #include <stdlib.h>
 #include <math.h>
+#include <fstream>
 
 using namespace std;
 
@@ -37,16 +41,27 @@ class Element
 
 	string taskDescr;
 	int numDays;
-	bool hasNumPriority;
+	bool hasNumPriority; // this means update() will subtract from numDays
+	bool hasCharNumPriority; // ^# case, should also have numPriority. Special case of numPriority
+	string priority;
 
-	Element()
+	// nonintuitive, but can be updated later
+	Element() // by default, assume everything has pure number priority
 	{
 		hasNumPriority = true;
+		hasCharNumPriority = false;
+	}
+
+	Element(string s)
+	{
+		hasNumPriority = true;
+		hasCharNumPriority = true;
 	}
 
 	Element(int a)
 	{
 		hasNumPriority = false;
+		hasCharNumPriority = false;
 	}
 
 };
@@ -72,6 +87,81 @@ void updateSched(int diff)
 			arr[i].numDays -= diff;
 	} // for
 } // updateSched()
+
+// https://stackoverflow.com/questions/4654636/how-to-determine-if-a-string-is-a-number-with-c
+bool isNumber(string s)
+{
+	std::string::const_iterator it = s.begin();
+    while (it != s.end() && std::isdigit(*it)) ++it;
+    return !s.empty() && it == s.end();
+} // isNumber()
+
+Element *ep;
+Element e;
+
+void importFile(string fileName)
+{
+	string inputLine;
+	ifstream infile;
+	infile.open ("scheddata.txt");
+     while(!(infile.eof()))
+     {
+	    getline(infile,inputLine);
+	    if(inputLine[0] == '(') //  we are at the first important line of the file
+	    {	// need to see if priority is an integer, make a new element object, and assign priority and description. Note that items will be sorted.
+	      	// could also take care of case where items are not sorted
+	      	// need to take care of ^# case
+	      	
+	      	string temp;
+	      	int j = 1;
+	      	bool isNumberPriority = true; // default, assume the full priority is a pure number
+		 	
+		 	while(inputLine.substr(j,1).compare(")") != 0) // give temp the value of the string inside (...) AKA the priority
+		  	{
+		    	temp += inputLine.substr(j,1); 
+				j++;
+		  	} // while
+
+		  	if(!isNumber(temp)) // check if priority is a pure number
+		    	isNumberPriority = false;
+
+		  	if(isNumberPriority) // if priority is a pure number
+		  	{
+		  		stringstream geek(temp); // convert string to int
+		  		int x;						 // ""
+				geek >> x;
+				// create new element with this priority and the description found in the rest of inputLine	
+				ep = new Element();
+				e = *ep;
+				e.taskDescr = inputLine.substr(j+2); // +2 because it is on ')', and the next char is a space
+				e.numDays = x;
+				arr.push_back(e);
+		  	} // if
+		  	
+		  	else if(isNumber(temp.substr(1,temp.length() - 1))) // ^# case
+		  	{
+		  		// create new element with ^# priority and the description found in the rest of inputline
+		  		stringstream geek(temp.substr(1,temp.length() - 1));
+		  		int x;
+		  		geek >> x;
+		  		ep = new Element("s");
+		  		e = *ep;
+		  		e.taskDescr = inputLine.substr(j+2);
+		  		e.numDays = x;
+		  		e.priority = temp.substr(0,1);
+		  		arr.push_back(e);
+		  	}
+
+		  	else
+		  	{ 
+		  		// create new element with other priority and the description found in the rest of inputLine
+		  	}
+		  		
+		} // if
+     } // while  	
+	infile.close();
+	cout << "Finished file import" << endl;
+} // importFile
 
 time_t now; 
 tm *ltm;
@@ -107,8 +197,18 @@ void displayItemNumbers()
 } // displayItemNumbers()
 
 
-int main()
+int main(int argc, char* argv[])
 {
+	/*cout << argv[0] << endl;
+	cout << argv[1] << endl;
+	cout << argc << endl;
+	cout << argv[1] << endl;
+
+	cout << (string)argv[1] << endl;*/
+
+	if(argc == 2)
+		importFile((string)argv[1]);
+
 	//vector<string> arr; // array of user's to-do items
 	// can calculate the day that this started running, then keep track of this day and update as required, save into file 
 	//before shutdown. Will be a glitch between days, but when printing out, it should be fine because it will update
@@ -119,8 +219,7 @@ int main()
 	currentDay = ltm->tm_mday;
 	currentMonth = ltm->tm_mon + 1;
 	currentYear = ltm->tm_year + 1900;
-	Element *ep;
-	Element e;
+	ofstream outputFile;
 	
 	while (1){ // main loop of program
 	
@@ -162,6 +261,7 @@ int main()
 	switch ( command ) 
 	{
 		case 1:
+			// printing it out (for now) will be the only time the data is written to file
 			// need to update the number of days each time its printed if the day has changed
 			now = time(0);                                        // get current time
 		    ltm = localtime(&now); // How exactly does this work?
@@ -177,10 +277,25 @@ int main()
 		    	currentYear = yyyy;
 		    }
 
+		    outputFile.open("scheddata.txt");
 			cout << "\n\n\n\n" << "*******************SCHEDULE*************************\n\n" << endl;
+			outputFile << "\n\n\n\n" << "*******************SCHEDULE*************************\n\n" << endl;
 		    for(int i = 0; i < arr.size(); i++)
-		    	cout << "(" << arr[i].numDays << ") " << arr[i].taskDescr << endl; // print first element of string, then rest of string
+		    {
+		    	if(arr[i].hasCharNumPriority && arr[i].hasNumPriority) // ^# case
+		    	{
+		    		cout << "(" << arr[i].priority << arr[i].numDays << ") " << arr[i].taskDescr << endl; // print priority, number of days, then task description in proper format
+		    		outputFile << "(" << arr[i].priority << arr[i].numDays << ") " << arr[i].taskDescr << endl;
+		    	}
+		    	else
+		    	{	
+		    		cout << "(" << arr[i].numDays << ") " << arr[i].taskDescr << endl; // print number of days, then task description in proper format
+		    		outputFile << "(" << arr[i].numDays << ") " << arr[i].taskDescr << endl;
+		    	}
+		    }
 		    cout << "\n\n\n\n\n\n\n\n" << endl;
+		    outputFile << "\n\n\n\n\n\n\n\n" << endl;
+		    outputFile.close();
 			break;
 
 
@@ -210,6 +325,9 @@ int main()
 		    	currentYear = yyyy;
 		    } // ehhh just set current times when starts, and update as you go through? if nothing entered, update doesnt do anything -> fine
 
+		    // dueDate is an integer, need to have it begin as a string to allow for special inputs
+		    //if(dueDate == )
+
 		    // convert current time to julian day 
 		  	jdnstart = computejdn(dd, mm, yyyy);
 
@@ -219,7 +337,7 @@ int main()
 
 		  	jdnend = computejdn(DD, MM, YYYY);
 		  	
-		  	sprintf(temp, "%d", jdnend - jdnstart);
+		  	sprintf(temp, "%d", jdnend - jdnstart); // convert int to string
 		    numDays = (string)temp;                        // ummm
 
 			element = "(" + numDays + ") " + taskDescr;
