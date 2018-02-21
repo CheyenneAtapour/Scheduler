@@ -24,7 +24,7 @@ where n, integer, is the number of days remaining for the task and k,j integers
 
 
 2 - 
-prompts user for a date and description of task
+Prompts user for a date and description of task
 calculates julian number difference between current date and due date. Uses this integer to sort the task in a collection (currently just a vector now)
 
 problems:
@@ -33,11 +33,16 @@ problems:
 
 
 3 -
+Prompts user to choose item number to delete, or display item numbers
+
+problems:
+-wrong inputs cause problems
+	-bigger number causes seg fault
+	-(lowercase) letter other than 'd' deletes 0th item
 
 
 
 4 -
-
 
 
 
