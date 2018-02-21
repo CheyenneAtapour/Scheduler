@@ -9,14 +9,18 @@ This returns a pointer to a string of the form day month year hours:minutes:seco
 
 * Maybe export to file occasionally -> seems like a bad idea, just interact when the user is requesting, but could be explored
 
+Make option to insert at specific spot
+Make option to move
+Separate things which are separated by newlines
+(#)Spacing seems off when displaying line numbers
 (#) Needs to deal with ?() case -> Just add a prefix to everything
-Needs to have option to add a prefix to something
-Needs to correctly print dates when showing item numbers
+(#) Needs to have option to add a prefix to something
+(#) Needs to correctly print dates when showing item numbers
 (#) Needs to be able to import file
 (#) Priorities other than numbers (ASAP) etc
 (#) Need to be able to have priorities that contain a number somewhere (assume there is only 1)
 (#) Edit priorities option
-Take timestamp from when user makes a relevant request (to add, display or update)
+(#) Take timestamp from when user makes a relevant request (to add, display or update)
 (#) Needs file to store tasks, 
 Needs to take white spaces in input task descriptions, 
 (#) Needs to update days remaining on display 
@@ -53,6 +57,8 @@ class Element
 	bool hasNumPriority; // this means update() will subtract from numDays
 	bool hasCharNumPriority; // ^# case, should also have numPriority. Special case of numPriority
 	bool hasStringNumPriority; // ^#^ case will have this, numPriority, and not CharNumPriority
+	bool newLine;
+	bool isHeader;
 	string priority;
 	int breakPos;
 	string prefix;
@@ -64,6 +70,15 @@ class Element
 		hasCharNumPriority = false;
 		hasStringNumPriority = false;
 		prefix = "";
+		newLine = false;
+		isHeader = false;
+	}
+
+	Element(double d)
+	{
+		newLine = true;
+		isHeader = false;
+		hasNumPriority = false;
 	}
 
 	Element(string s) // ^# case. Will print out the priority description first, then the number part of the priority
@@ -72,6 +87,8 @@ class Element
 		hasCharNumPriority = true;
 		hasStringNumPriority = false;
 		prefix = "";
+		newLine = false;
+		isHeader = false;
 	}
 
 	Element(int a) // pure string case
@@ -80,6 +97,8 @@ class Element
 		hasCharNumPriority = false;
 		hasStringNumPriority = false;
 		prefix = "";
+		newLine = false;
+		isHeader = false;
 	}
 
 	Element(bool b, int breakPos) // ^#^ case
@@ -89,6 +108,8 @@ class Element
 		hasStringNumPriority = true;
 		this->breakPos = breakPos;
 		prefix = "";
+		newLine = false;
+		isHeader = false;
 	}
 
 	void convertPureInt()
@@ -118,6 +139,47 @@ class Element
 		this->hasCharNumPriority = false;
 		this->hasStringNumPriority = true;
 	} // convertStringNum()
+
+	bool isNewLine()
+	{
+		return this->newLine;
+	}
+
+	bool isHeaderFun()
+	{
+		return this->isHeader;
+	}
+
+	void print()
+	{
+		if(this->newLine)
+		{
+			cout << "\n";
+		}
+		else if(this->isHeader)
+		{
+			cout << this->taskDescr << endl;
+		}
+		else if(!hasNumPriority && !hasCharNumPriority && !hasStringNumPriority) // pure string case
+		{
+			cout << this->prefix << "(" << this->priority << ") " << this->taskDescr << endl;
+			return;
+		}
+		else if(hasNumPriority && !hasCharNumPriority && !hasStringNumPriority) // pure int case
+		{
+			cout << this->prefix << "(" << this->numDays << ") " << this->taskDescr << endl;
+			return;
+		}
+		else if(hasNumPriority && hasCharNumPriority && !hasStringNumPriority)
+		{
+			cout << this->prefix << "(" << this->priority << this->numDays << ") " << this->taskDescr << endl;
+			return;
+		}
+		else
+			cout << this->prefix << "(" << (this->priority).substr(0,this->breakPos) << this->numDays << (this->priority).substr(this->breakPos) << ") " << this->taskDescr << endl;
+
+
+	} // print()
 }; // Class Element
 
 int computejdn(int day, int month, int year)
@@ -160,11 +222,13 @@ int numberFound(string s)
 	int i;
 	bool numberFound = false;
 	string temp = "";
+	int pos;
 	for(i = 0; i < s.length(); i++)
 	{
 		if(isNumber(s.substr(i,1)))
 		{
 			numberFound = true;
+			//pos = i;
 			break;
 		}
 	} // for
@@ -176,8 +240,12 @@ int numberFound(string s)
 			temp += s.substr(i,1);
 			i++;
 		} // while
-		if(temp.find("00") != std::string::npos) // if 00 is found, do not treat this as a valid int
+		if(temp.find("00") != std::string::npos || s.find("-0") != std::string::npos) // if 00 or -0 is found, do not treat this as a valid int
 			return -1;
+		/*if(pos-1 >= 0 && s.substr(pos-1,1) == "-")
+		{
+			temp = "-" + temp;
+		}*/
 		stringstream geek(temp); // convert string to int
 		geek >> i;
 		//cout << i << endl;
@@ -198,7 +266,24 @@ void importFile(string fileName)
      {
 	    getline(infile,inputLine);
 	    cout << inputLine << endl;
-	    if((pos = inputLine.find("(")) != std::string::npos) //  we are at the first important line of the file
+	    if(inputLine.find("\n") && inputLine.length() == 0) // a line just containing a new line, we want to keep formatting
+	    {
+	    	ep = new Element(2.0);
+	    	e = *ep;
+	    	arr.push_back(e);
+	    } // if
+
+	    else if(inputLine.substr(0,1).compare("~") == 0)
+	    {
+	    	ep = new Element();
+	    	e = *ep;
+	    	e.isHeader = true;
+	    	e.hasNumPriority = false;
+	    	e.taskDescr = inputLine;
+	    	arr.push_back(e);
+	    }
+
+	    else if((pos = inputLine.find("(")) != std::string::npos) //  we are at the first important line of the file
 	    {	// need to see if priority is an integer, make a new element object, and assign priority and description. Note that items will be sorted.
 	      	// could also take care of case where items are not sorted
 	      	// need to take care of ^# case
@@ -231,19 +316,34 @@ void importFile(string fileName)
 				//arr.push_back(e);
 		  	} // if
 		  	
-		  	else if(temp != "" && isNumber(temp.substr(1,temp.length() - 1))) // ^# case
+		  	else if(temp != "" && isNumber(temp.substr(1,temp.length() - 1)) && temp != "-0") // ^# case. Exclude -0
 		  	{
 		  		// create new element with ^# priority and the description found in the rest of inputline
-		  		stringstream geek(temp.substr(1,temp.length() - 1));
-		  		int x;
-		  		geek >> x;
-		  		ep = new Element("s");
-		  		e = *ep;
-		  		e.taskDescr = inputLine.substr(j+2);
-		  		e.numDays = x;
-		  		e.priority = temp.substr(0,1);
-		  		//cout << "pushback1" << endl;
-		  		//arr.push_back(e);
+		  		if(temp.substr(0,1) == "-") // we have a pure negative number
+		  		{
+		  			stringstream geek(temp);
+		  			int y;
+		  			geek >> y;
+		  			ep = new Element();
+		  			e = *ep;
+		  			e.taskDescr = inputLine.substr(j+2);
+		  			e.numDays = y;
+		  		}
+		  		
+		  		else
+		  		{
+		  			stringstream geek(temp.substr(1,temp.length() - 1));
+			  		int x;
+			  		geek >> x;
+			  		ep = new Element("s");
+			  		e = *ep;
+			  		e.taskDescr = inputLine.substr(j+2);
+			  		e.numDays = x;
+			  		e.priority = temp.substr(0,1);
+			  		//cout << "pushback1" << endl;
+			  		//arr.push_back(e);
+		  		}
+		  		
 		  	} // else if
 
 		  	else if(temp != "" && (numberFound(temp) + 1)) // ^#^ case. Number found somewhere in priority, not ^# case. NumberFound returns -1 if no number found, +1 is 0 = false, quick maffs. We also want 0 to count as finding a number
@@ -319,7 +419,10 @@ void displayItemNumbers()
 
 	cout << "\n\n\n\n" << "*******************SCHEDULE*************************\n\n" << endl;
 	for(int i = 0; i < arr.size(); i++)
-		cout << i << ": " << "(" << arr[i].numDays << ") " << arr[i].taskDescr << endl; // print first element of string, then rest of string
+	{
+		cout << i << ": "; // print number, then call print function
+		arr[i].print();
+	}
 	cout << "\n\n\n\n\n\n\n\n" << endl;
 } // displayItemNumbers()
 
@@ -345,7 +448,7 @@ void insertNumPriority(Element e)
 	{
 		for(int i = 0; i < arr.size(); i++)
 		{
-			if(arr[i].numDays > e.numDays) // if tempdays casted to an int is bigger than numDays, place element here (before)
+			if(arr[i].hasNumPriority && arr[i].numDays > e.numDays) // if tempdays casted to an int is bigger than numDays, place element here (before)
 			{	
 				arr.insert(arr.begin() + i, e);// place here and move everything else back one
 				inserted = 1;
@@ -443,6 +546,7 @@ int main(int argc, char* argv[])
 	int curJulianDay;
 
 	int updateDays;
+	int itemNum;
 
 	cout << "\nMain Menu\n1) Display Schedule\n2) Add Item\n3) Remove Item\n4) Update Item\n" << endl;
 	cin >> command;
@@ -472,27 +576,39 @@ int main(int argc, char* argv[])
 
 		    for(int i = 0; i < arr.size(); i++)
 		    {
-		    	if(arr[i].hasStringNumPriority && arr[i].hasNumPriority) // ^#^ case
+		    	if(arr[i].isNewLine())
+		    	{
+		    		cout << "\n";
+		    		outputFile << "\n";
+		    	} // if
+
+		    	else if(arr[i].isHeaderFun())
+		    	{
+		    		cout << arr[i].taskDescr << endl;
+		    		outputFile << arr[i].taskDescr << endl;
+		    	}
+		    	
+		    	else if(arr[i].hasStringNumPriority && arr[i].hasNumPriority) // ^#^ case
 		    	{
 		    		cout << arr[i].prefix << "(" << (arr[i].priority).substr(0,arr[i].breakPos) << arr[i].numDays << (arr[i].priority).substr(arr[i].breakPos) << ") " << arr[i].taskDescr << endl; // print priority, number of days, then task description in proper format
 		    		outputFile << arr[i].prefix << "(" << (arr[i].priority).substr(0,arr[i].breakPos) << arr[i].numDays << (arr[i].priority).substr(arr[i].breakPos) << ") " << arr[i].taskDescr << endl;
-		    	} // if
+		    	} // else if
 
 		    	else if(arr[i].hasCharNumPriority && arr[i].hasNumPriority) // ^# case  **can make this come after the current else if and only check if it has CharNumPriority
 		    	{
 		    		cout << arr[i].prefix << "(" << arr[i].priority << arr[i].numDays << ") " << arr[i].taskDescr << endl; // print priority, number of days, then task description in proper format
 		    		outputFile << arr[i].prefix << "(" << arr[i].priority << arr[i].numDays << ") " << arr[i].taskDescr << endl;
-		    	} // if
+		    	} // else if
 
 		    	else if(!arr[i].hasNumPriority)
 		    	{
-		    		cout << arr[i].prefix << "(" << arr[i].priority << ") " << arr[i].taskDescr << endl; // print priority then task description in proper format
+		    		cout << arr[i].prefix << "(" << arr[i].priority << ") " << arr[i].taskDescr << endl; //  pure string case. print priority then task description in proper format
 		    		outputFile << arr[i].prefix << "(" << arr[i].priority << ") " << arr[i].taskDescr << endl;
 		    	} // else if
 
 		    	else
 		    	{	
-		    		cout << arr[i].prefix << "(" << arr[i].numDays << ") " << arr[i].taskDescr << endl; // print number of days, then task description in proper format
+		    		cout << arr[i].prefix << "(" << arr[i].numDays << ") " << arr[i].taskDescr << endl; // pure number case. print number of days, then task description in proper format
 		    		outputFile << arr[i].prefix << "(" << arr[i].numDays << ") " << arr[i].taskDescr << endl;
 		    	} // else
 		    } // for
@@ -645,6 +761,11 @@ int main(int argc, char* argv[])
 					stringstream geek(dinput); // convert string to int
 					int x;						 // ""
 					geek >> x;					 // ""
+					if(x >= arr.size() || x < 0)
+					{
+						cout << "Item number does not exist. Redirecting to main menu" << endl; // instead, we can loop and get proper output, or ask if user wants to return to main menu
+							break;
+					} // if
 					arr.erase(arr.begin() + x);
 					cout << "Item number " << x << " deleted" << endl;
 					deleted = true;
@@ -688,9 +809,12 @@ int main(int argc, char* argv[])
 					cout << "Enter the new desired priority for item number " << pos << endl;
 					cin >> uinput;
 					arr[pos].priority = uinput;
+					cout << "Would you like to resort this item?" << endl;
+					cout << "1) Yes \n 2) No" << endl;
+					cin >> uinput;
 					// if there is a number in priority, remove it and put it as numdays. If afterwards priority is "", then this is a purenumber priority.
 					// if no number, pure string priority. If it has a number, potentially need to sort (or rather just place this appropriately)
-					if( (num = numberFound(arr[pos].priority)) + 1 )
+					if( (uinput == "1" || uinput == "Yes" || uinput == "YES" || uinput == "yes" || uinput == "YeS" || uinput == "YEs" || uinput == "yES") && (num = numberFound(arr[pos].priority)) + 1 )
 					{
 						// update everything now, then continue using our current time stamp
 						refreshSchedule(); // all current values are of when this function was invoked
@@ -747,6 +871,111 @@ int main(int argc, char* argv[])
 			cin >> updateDays;
 			updateSched(updateDays);
 			cout << "Schedule updated by " << updateDays << " days" << endl;
+			break;
+
+
+		// hidden add/change a prefix
+		case 6: 
+
+			cout << "To which item number would you like to add/change a prefix? (Enter 'd' to display item numbers)" << endl;
+			cin >> uinput;
+
+			while(uinput == "d")
+			{
+				displayItemNumbers();
+				cout << "To which item number would you like to add/change a prefix? (Enter 'd' to display item numbers)" << endl; // option to append prefix?
+				cin >> uinput;
+			} // while
+
+			if(isNumber(uinput)) // if the input was a number
+			{
+				stringstream geek(uinput); // convert string to int
+				geek >> itemNum;
+			} // if
+
+			if(itemNum >= arr.size() || itemNum < 0)
+			{
+				cout << "There is no such item number. Returning to the main menu" << endl; // can change to go back and try again or option for main menu
+				break;
+			}
+			
+			else // valid number input
+			{
+				string prefixStr;
+				cout << "Enter the desired prefix for item number " << itemNum << endl;
+				cin >> prefixStr;
+				arr[itemNum].prefix = prefixStr;
+			} // if
+			
+
+			break;
+
+		
+		// hidden calculate a julian number from today
+		case 7: 
+
+			cout << "Input due date of task in format DDMMYYYY" << endl;
+			cin >> dueDateStr;
+
+			now = time(0);                                        // get current time
+		    ltm = localtime(&now);
+		    dd = ltm->tm_mday;
+		    mm = ltm->tm_mon + 1;
+		    yyyy = ltm->tm_year + 1900;
+
+		    if(1) // hacks
+		    {
+		    	stringstream geek(dueDateStr); // convert string to int
+				geek >> dueDate;
+			} // if		
+
+		    // convert current time to julian day 
+		  	jdnstart = computejdn(dd, mm, yyyy);
+
+		  	DD = dueDate / 1000000; // uppercase is due date, calculated when provided
+		    MM = (dueDate % 1000000) / 10000;
+		  	YYYY = dueDate % 10000;
+
+		  	jdnend = computejdn(DD, MM, YYYY);
+
+		  	cout << "The Julian number is " << jdnend - jdnstart << endl; 
+		  	break;
+
+
+		// hidden create a line break (unfinished)
+		case 8: 
+
+			cout << "After which item number would you like to append a linebreak? (Enter 'd' to display item numbers)" << endl;
+			cin >> uinput;
+
+			while(uinput == "d")
+			{
+				displayItemNumbers();
+				cout << "To which item number would you like to append a linebreak? (Enter 'd' to display item numbers)" << endl;
+				cin >> uinput;
+			} // while
+
+			if(isNumber(uinput)) // if the input was a number
+			{
+				stringstream geek(uinput); // convert string to int
+				geek >> itemNum;
+			} // if
+
+			if(itemNum >= arr.size() || itemNum < 0)
+			{
+				cout << "There is no such item number. Returning to the main menu" << endl; // can change to go back and try again or option for main menu
+				break;
+			}
+			
+			else // valid number input
+			{
+				// create a new newline element and insert it into itemNum
+				ep = new Element(2.0);
+	    		e = *ep;
+	    		arr.insert(arr.begin() + itemNum+1, e);
+	    		cout << "Appended a newline to item number " << itemNum << endl;
+			} // else
+
 			break;
 
 		default:
