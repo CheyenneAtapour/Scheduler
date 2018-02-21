@@ -9,7 +9,8 @@ Main menu consists of the following options:
 3) Remove Item
 4) Update Item
 
-
+NOTE:
+There are hidden options past option 4.
 
 Implementation Specific
 1 - 
@@ -19,7 +20,6 @@ Displays all of the user's remaining tasks in order of increasing remaining days
 (n+k+j) <task description>
 ...
 where n, integer, is the number of days remaining for the task and k,j integers
-
 
 
 
@@ -43,7 +43,17 @@ problems:
 
 
 4 -
+Prompts user to choose item number to update, or display item numbers
+Options to update priority or task description
+priority type changes upon changing priority, and element is deleted and resorted
 
 
+
+5 -
+Asks user how old the schedule is
+updates the numbers in all priorities in schedule by the number supplied by the user
+
+problems:
+-unsafe to use. Need to automate this process, which is made necessary by flaw in being offline for more than a day and trying to reimport
 
 
