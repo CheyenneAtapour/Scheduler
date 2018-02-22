@@ -9,9 +9,14 @@ This returns a pointer to a string of the form day month year hours:minutes:seco
 
 * Maybe export to file occasionally -> seems like a bad idea, just interact when the user is requesting, but could be explored
 
+If there is newlines, and we haven't seen anything relevant yet, ignore it
+Do not input newlines before header into file
+
+(#) Needs to take white spaces in input task descriptions, 
+(#) Importing and exporting is adding new linebreaks 7 newline difference
 Make option to insert at specific spot
-Make option to move
-Separate things which are separated by newlines
+(#) Make option to move
+Separate things which are separated by newlines or make option to organize things with number priority
 (#)Spacing seems off when displaying line numbers
 (#) Needs to deal with ?() case -> Just add a prefix to everything
 (#) Needs to have option to add a prefix to something
@@ -22,7 +27,6 @@ Separate things which are separated by newlines
 (#) Edit priorities option
 (#) Take timestamp from when user makes a relevant request (to add, display or update)
 (#) Needs file to store tasks, 
-Needs to take white spaces in input task descriptions, 
 (#) Needs to update days remaining on display 
 (#) Make option to display line numbers for editing
 Swap option using line numbers?
@@ -117,6 +121,8 @@ class Element
 		this->hasNumPriority = true;
 		this->hasCharNumPriority = false;
 		this->hasStringNumPriority = false;
+		this->isHeader = false;
+		this->newLine = false;
 	} // convertPureInt()
 
 	void convertPureString()
@@ -124,6 +130,8 @@ class Element
 		this->hasNumPriority = false;
 		this->hasCharNumPriority = false;
 		this->hasStringNumPriority = false;	
+		this->isHeader = false;
+		this->newLine = false;
 	} // convertPureString()
 
 	void convertCharNum()
@@ -131,6 +139,8 @@ class Element
 		this->hasNumPriority = true;
 		this->hasCharNumPriority = true;
 		this->hasStringNumPriority = false;
+		this->isHeader = false;
+		this->newLine = false;
 	} // convertCharNum()
 
 	void convertStringNum()
@@ -138,6 +148,8 @@ class Element
 		this->hasNumPriority = true;
 		this->hasCharNumPriority = false;
 		this->hasStringNumPriority = true;
+		this->isHeader = false;
+		this->newLine = false;
 	} // convertStringNum()
 
 	bool isNewLine()
@@ -208,6 +220,8 @@ int updateSched(int diff)
 // https://stackoverflow.com/questions/4654636/how-to-determine-if-a-string-is-a-number-with-c
 bool isNumber(string s)
 {
+	if(s.find("00") != std::string::npos)
+		return false;
 	std::string::const_iterator it = s.begin();
     while (it != s.end() && std::isdigit(*it)) ++it;
     return !s.empty() && it == s.end();
@@ -262,12 +276,17 @@ void importFile(string fileName)
 	//infile.open ("scheddata.txt");
 	infile.open(fileName);
 	int pos;
+	int newLineCtr = 0;
+	bool headerSeen = false;
+	bool relevantElementSeen = false;
      while(!(infile.eof()))
      {
 	    getline(infile,inputLine);
 	    cout << inputLine << endl;
-	    if(inputLine.find("\n") && inputLine.length() == 0) // a line just containing a new line, we want to keep formatting
+
+	    if(relevantElementSeen && inputLine.find("\n") && inputLine.length() == 0) // a line just containing a new line, we want to keep formatting
 	    {
+	    	newLineCtr++;
 	    	ep = new Element(2.0);
 	    	e = *ep;
 	    	arr.push_back(e);
@@ -275,6 +294,13 @@ void importFile(string fileName)
 
 	    else if(inputLine.substr(0,1).compare("~") == 0)
 	    {
+	    	relevantElementSeen = true;
+	    	if(!headerSeen)
+	    	{
+	    		cout << newLineCtr << " New lines seen before first header" << endl;
+	    		headerSeen = true;
+	    	}
+	  
 	    	ep = new Element();
 	    	e = *ep;
 	    	e.isHeader = true;
@@ -288,6 +314,8 @@ void importFile(string fileName)
 	      	// could also take care of case where items are not sorted
 	      	// need to take care of ^# case
 	      	
+	    	relevantElementSeen = true;
+
 	      	string temp;
 	      	string prefix = inputLine.substr(0,pos);
 	      	int j = pos + 1;
@@ -387,6 +415,7 @@ void importFile(string fileName)
 		} // if
      } // while  	
 	infile.close();
+	cout << "Counted " << newLineCtr << " new lines" << endl;
 	cout << "Finished file import" << endl;
 } // importFile
 
@@ -491,9 +520,13 @@ int main(int argc, char* argv[])
 	cout << argv[1] << endl;
 
 	cout << (string)argv[1] << endl;*/
+	bool importedFile = false;
 
-	if(argc == 2)
+	if(argc == 2) // if a file was provided, import it
+	{
 		importFile((string)argv[1]);
+		importedFile = true;
+	}
 
 	//vector<string> arr; // array of user's to-do items
 	// can calculate the day that this started running, then keep track of this day and update as required, save into file 
@@ -547,8 +580,13 @@ int main(int argc, char* argv[])
 
 	int updateDays;
 	int itemNum;
+	int newLineCtr;
 
-	cout << "\nMain Menu\n1) Display Schedule\n2) Add Item\n3) Remove Item\n4) Update Item\n" << endl;
+	string restDescr;
+
+	bool firstHeader;
+
+	cout << "\nMain Menu\n1) Display Schedule\n2) Add Item\n3) Remove Item\n4) Update Item\n5) Update Schedule\n6) Add/Change Prefix\n7) Calculate Julian Difference\n8) Add or Remove Linebreak" << endl;
 	cin >> command;
 
 	switch ( command ) 
@@ -570,51 +608,61 @@ int main(int argc, char* argv[])
 		    	currentYear = yyyy;
 		    }
 
-		    outputFile.open("scheddata.txt");
+		    outputFile.open("schedule.txt");
 			cout << "\n\n\n\n" << "*******************SCHEDULE*************************" << "\n" << (curJulianDay = computejdn(currentDay,currentMonth, currentYear)) << "\n\n" << endl; // for the legacy
-			outputFile << "\n\n\n\n" << "*******************SCHEDULE*************************" << "\n" << curJulianDay << "\n\n" << endl;
+			outputFile /*<< "\n\n\n\n" */<< "*******************SCHEDULE*************************" << "\n" << curJulianDay << "\n" << endl;
+			//if(!importedFile)  // We want to control how the schedule is formatted, so we don't need this right now 
+			//	outputFile << "\n\n" << endl; // these two are extra newlines if file was imported
+
+			newLineCtr = 0;
+			firstHeader = false;
 
 		    for(int i = 0; i < arr.size(); i++)
 		    {
 		    	if(arr[i].isNewLine())
 		    	{
 		    		cout << "\n";
-		    		outputFile << "\n";
+		    		outputFile << endl;
+		    		newLineCtr++;
+		    		if(!firstHeader)
+		    			cout << "Printed " << newLineCtr << " newlines before first header" << endl;
 		    	} // if
 
 		    	else if(arr[i].isHeaderFun())
 		    	{
 		    		cout << arr[i].taskDescr << endl;
-		    		outputFile << arr[i].taskDescr << endl;
+		    		outputFile << "\n" << arr[i].taskDescr; //<< endl; // try printing newlines first to avoid having an extra line at bottom
+		    		firstHeader = true;
 		    	}
 		    	
 		    	else if(arr[i].hasStringNumPriority && arr[i].hasNumPriority) // ^#^ case
 		    	{
 		    		cout << arr[i].prefix << "(" << (arr[i].priority).substr(0,arr[i].breakPos) << arr[i].numDays << (arr[i].priority).substr(arr[i].breakPos) << ") " << arr[i].taskDescr << endl; // print priority, number of days, then task description in proper format
-		    		outputFile << arr[i].prefix << "(" << (arr[i].priority).substr(0,arr[i].breakPos) << arr[i].numDays << (arr[i].priority).substr(arr[i].breakPos) << ") " << arr[i].taskDescr << endl;
+		    		outputFile << "\n" << arr[i].prefix << "(" << (arr[i].priority).substr(0,arr[i].breakPos) << arr[i].numDays << (arr[i].priority).substr(arr[i].breakPos) << ") " << arr[i].taskDescr; // << endl;
 		    	} // else if
 
 		    	else if(arr[i].hasCharNumPriority && arr[i].hasNumPriority) // ^# case  **can make this come after the current else if and only check if it has CharNumPriority
 		    	{
 		    		cout << arr[i].prefix << "(" << arr[i].priority << arr[i].numDays << ") " << arr[i].taskDescr << endl; // print priority, number of days, then task description in proper format
-		    		outputFile << arr[i].prefix << "(" << arr[i].priority << arr[i].numDays << ") " << arr[i].taskDescr << endl;
+		    		outputFile << "\n" << arr[i].prefix << "(" << arr[i].priority << arr[i].numDays << ") " << arr[i].taskDescr; // << endl;
 		    	} // else if
 
 		    	else if(!arr[i].hasNumPriority)
 		    	{
 		    		cout << arr[i].prefix << "(" << arr[i].priority << ") " << arr[i].taskDescr << endl; //  pure string case. print priority then task description in proper format
-		    		outputFile << arr[i].prefix << "(" << arr[i].priority << ") " << arr[i].taskDescr << endl;
+		    		outputFile << "\n" << arr[i].prefix << "(" << arr[i].priority << ") " << arr[i].taskDescr; // << endl;
 		    	} // else if
 
 		    	else
 		    	{	
 		    		cout << arr[i].prefix << "(" << arr[i].numDays << ") " << arr[i].taskDescr << endl; // pure number case. print number of days, then task description in proper format
-		    		outputFile << arr[i].prefix << "(" << arr[i].numDays << ") " << arr[i].taskDescr << endl;
+		    		outputFile << "\n" << arr[i].prefix << "(" << arr[i].numDays << ") " << arr[i].taskDescr; // << endl;
 		    	} // else
 		    } // for
 		    cout << "\n\n\n\n\n\n\n\n" << endl;
-		    outputFile << "\n\n\n\n\n\n\n\n" << endl;
+		    //outputFile << "\n\n\n\n\n\n\n\n" << endl; dont think this is needed
 		    outputFile.close();
+		    cout << "Exported " << newLineCtr << " new lines" << endl;
 		    //cout << "size after the print: " << arr.size() << endl;
 			break;
 
@@ -622,8 +670,10 @@ int main(int argc, char* argv[])
 		case 2:
 
 			cout << "Enter Description of Task" << endl;
-			cin >> taskDescr;
-			//getline(cin, taskDescr);
+			//cin >> taskDescr;
+			cin >> taskDescr; // get the line up to a whitespace
+			getline(cin, restDescr); // get the rest of the line
+			taskDescr = taskDescr + restDescr; // concatenate together
 			//std::cin.getline(cin,sizeof(taskDescr));
 
 			cout << "Input due date of task in format DDMMYYYY" << endl;
@@ -752,7 +802,7 @@ int main(int argc, char* argv[])
 				while(dinput == "d")
 				{
 					displayItemNumbers();
-					cout << "Which item number would you like updated? (Enter 'd' to display item numbers)" << endl;
+					cout << "Which item number would you like deleted? (Enter 'd' to display item numbers)" << endl;
 					cin >> dinput;
 				} // while
 
@@ -801,25 +851,36 @@ int main(int argc, char* argv[])
 				cout << "What would you like to update?" << endl;
 				cout << "1) Priority" << endl; // can add option to enter new duedate
 				cout << "2) Task Description" << endl;
+				cout << "3) Location" << endl;
 
 				cin >> uinput;
 				int num;
+				bool sortRequest = false;
+				bool numberWasFound = false;
 				if(uinput == "1")
 				{
 					cout << "Enter the new desired priority for item number " << pos << endl;
 					cin >> uinput;
 					arr[pos].priority = uinput;
-					cout << "Would you like to resort this item?" << endl;
-					cout << "1) Yes \n 2) No" << endl;
-					cin >> uinput;
+					// if there is a number in priority, ask if user wants to re-sort
+					if((num = numberFound(arr[pos].priority)) + 1 )
+					{
+						numberWasFound = true;
+						cout << "Would you like to re-sort this item?" << endl;
+						cout << "1) Yes\n2) No" << endl;
+						cin >> uinput;
+						if(uinput == "1" || uinput == "Yes" || uinput == "YES" || uinput == "yes" || uinput == "YeS" || uinput == "YEs" || uinput == "yES")
+							sortRequest = true;
+					}
+					// then if input was yes, do the resorting
 					// if there is a number in priority, remove it and put it as numdays. If afterwards priority is "", then this is a purenumber priority.
 					// if no number, pure string priority. If it has a number, potentially need to sort (or rather just place this appropriately)
-					if( (uinput == "1" || uinput == "Yes" || uinput == "YES" || uinput == "yes" || uinput == "YeS" || uinput == "YEs" || uinput == "yES") && (num = numberFound(arr[pos].priority)) + 1 )
+					if(sortRequest && numberWasFound)
 					{
 						// update everything now, then continue using our current time stamp
 						refreshSchedule(); // all current values are of when this function was invoked
 
-						cout << "I found this number: " << num << endl;
+						//cout << "I found this number: " << num << endl;
 						sprintf(temp, "%d", num); // convert int to string
 		    			string intPriorityStr = (string)temp; 
 		  				int intPriorityStrpos = (arr[pos].priority).find(intPriorityStr); // find the position of the integer in the priority string
@@ -852,13 +913,48 @@ int main(int argc, char* argv[])
 					cout << "Sucessfully updated item" << endl;
 
 				}// if
-				else
+				else if(uinput == "2")
 				{
 					cout << "Enter the new desired task description for item number " << pos << endl;
 					cin >> uinput;
 					arr[pos].taskDescr = uinput;
 					cout << "Successfully updated item number " << pos << endl;
 				} // else
+
+				else if(uinput == "3")
+				{
+					cout << "Which item number would you like item number " << pos << " to appear after? (Enter 'd' to display item numbers)"  << endl;
+					cin >> uinput;
+
+					while(uinput == "d")
+					{
+						displayItemNumbers();
+						cout << "Which item number would you like item number " << pos << " to appear after? (Enter 'd' to display item numbers)" << endl;
+						cin >> uinput;
+					} // while
+
+					if(isNumber(uinput)) // if the input was a number
+					{
+						stringstream geek(uinput); // convert string to int
+						geek >> itemNum;
+					} // if
+
+					if(itemNum >= arr.size() || itemNum < 0)
+					{
+						cout << "There is no such item number. Returning to the main menu" << endl; // can change to go back and try again or option for main menu
+						break;
+					}
+					
+					else // valid number input
+					{
+						// save, then delete current element, and insert a copy after the specified number
+						Element temporary = arr[pos];
+						arr.insert(arr.begin()+itemNum+1, temporary);
+						arr.erase(arr.begin()+pos);
+						cout << "Successfully moved item" << endl;
+					} // else	
+
+				} // else if
 			} // if
 
 			break;
@@ -945,36 +1041,83 @@ int main(int argc, char* argv[])
 		// hidden create a line break (unfinished)
 		case 8: 
 
-			cout << "After which item number would you like to append a linebreak? (Enter 'd' to display item numbers)" << endl;
+			cout << "Would you like to append or remove a linebreak?" << endl;
+			cout << "1) Append\n2) Remove" << endl;
 			cin >> uinput;
 
-			while(uinput == "d")
+			if(uinput == "1")
 			{
-				displayItemNumbers();
-				cout << "To which item number would you like to append a linebreak? (Enter 'd' to display item numbers)" << endl;
+				cout << "After which item number would you like to append a linebreak? (Enter 'd' to display item numbers)" << endl;
 				cin >> uinput;
-			} // while
 
-			if(isNumber(uinput)) // if the input was a number
-			{
-				stringstream geek(uinput); // convert string to int
-				geek >> itemNum;
-			} // if
+				while(uinput == "d")
+				{
+					displayItemNumbers();
+					cout << "To which item number would you like to append a linebreak? (Enter 'd' to display item numbers)" << endl;
+					cin >> uinput;
+				} // while
 
-			if(itemNum >= arr.size() || itemNum < 0)
+				if(isNumber(uinput)) // if the input was a number
+				{
+					stringstream geek(uinput); // convert string to int
+					geek >> itemNum;
+				} // if
+
+				if(itemNum >= arr.size() || itemNum < 0)
+				{
+					cout << "There is no such item number. Returning to the main menu" << endl; // can change to go back and try again or option for main menu
+					break;
+				}
+				
+				else // valid number input
+				{
+					// create a new newline element and insert it into itemNum
+					ep = new Element(2.0);
+		    		e = *ep;
+		    		arr.insert(arr.begin() + itemNum+1, e);
+		    		cout << "Appended a newline to item number " << itemNum << endl;
+				} // else
+			} // if append linebreak
+
+			else
 			{
-				cout << "There is no such item number. Returning to the main menu" << endl; // can change to go back and try again or option for main menu
-				break;
-			}
+				cout << "Which number linebreak would you like to remove? (Enter 'd' to display itemnumbers)" << endl;
+				cin >> uinput;
+
+				while(uinput == "d")
+				{
+					displayItemNumbers();
+					cout << "Which number linebreak would you like to remove? (Enter 'd' to display item numbers)" << endl;
+					cin >> uinput;
+				} // while
+
+				if(isNumber(uinput)) // if the input was a number
+				{
+					stringstream geek(uinput); // convert string to int
+					geek >> itemNum;
+				} // if
+
+				if(itemNum >= arr.size() || itemNum < 0)
+				{
+					cout << "There is no such item number. Returning to the main menu" << endl; // can change to go back and try again or option for main menu
+					break;
+				} // if
+				
+				else // valid number input
+				{
+					if(arr[itemNum].isNewLine())
+					{
+						arr.erase(arr.begin()+itemNum);
+						cout << "Successfully deleted linebreak" << endl;
+					}
+					else
+					{
+						cout << "That is not a linebreak. Returning to the main menu" << endl;
+					}
+				} // else
+
+ 			} // else remove linebreak
 			
-			else // valid number input
-			{
-				// create a new newline element and insert it into itemNum
-				ep = new Element(2.0);
-	    		e = *ep;
-	    		arr.insert(arr.begin() + itemNum+1, e);
-	    		cout << "Appended a newline to item number " << itemNum << endl;
-			} // else
 
 			break;
 
