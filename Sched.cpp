@@ -10,14 +10,18 @@ This returns a pointer to a string of the form day month year hours:minutes:seco
 * Maybe export to file occasionally -> seems like a bad idea, just interact when the user is requesting, but could be explored
 
 If there is newlines, and we haven't seen anything relevant yet, ignore it
-Do not input newlines before header into file
+Do not input newlines before header into file ?
+
+Make option to insert at specific spot
+Separate things which are separated by newlines or make option to organize things with number priority. Give everything a sorting priority based on block it is located in
+Swap option using line numbers?
+Need to check against bad inputs - letters other than 'd' for deleting delete 0th item? numbers greater than size of arr give segfault 
+Options to return to main menu
 
 (#) Needs to take white spaces in input task descriptions, 
 (#) Importing and exporting is adding new linebreaks 7 newline difference
-Make option to insert at specific spot
 (#) Make option to move
-Separate things which are separated by newlines or make option to organize things with number priority
-(#)Spacing seems off when displaying line numbers
+(#) Spacing seems off when displaying line numbers
 (#) Needs to deal with ?() case -> Just add a prefix to everything
 (#) Needs to have option to add a prefix to something
 (#) Needs to correctly print dates when showing item numbers
@@ -29,8 +33,6 @@ Separate things which are separated by newlines or make option to organize thing
 (#) Needs file to store tasks, 
 (#) Needs to update days remaining on display 
 (#) Make option to display line numbers for editing
-Swap option using line numbers?
-Need to check against bad inputs - letters other than 'd' for deleting delete 0th item? numbers greater than size of arr give segfault 
 */
 
 #include <stdio.h>
@@ -282,6 +284,8 @@ void importFile(string fileName)
      while(!(infile.eof()))
      {
 	    getline(infile,inputLine);
+	    if(infile.eof())
+	    	break;
 	    cout << inputLine << endl;
 
 	    if(relevantElementSeen && inputLine.find("\n") && inputLine.length() == 0) // a line just containing a new line, we want to keep formatting
@@ -447,12 +451,17 @@ void displayItemNumbers()
 	}
 
 	cout << "\n\n\n\n" << "*******************SCHEDULE*************************\n\n" << endl;
-	for(int i = 0; i < arr.size(); i++)
+	int i;
+	for(i = 0; i < arr.size(); i++)
 	{
 		cout << i << ": "; // print number, then call print function
 		arr[i].print();
 	}
 	cout << "\n\n\n\n\n\n\n\n" << endl;
+	cout << i << endl;
+	cout << "The last element in the array is "; 
+	arr[i-1].print();
+	cout << arr[i-1].isNewLine() << endl;
 } // displayItemNumbers()
 
 void addCharNumElement(string priority, int dueDate, string descr)
@@ -460,7 +469,8 @@ void addCharNumElement(string priority, int dueDate, string descr)
 
 } // addCharNumElement()
 
-void addCharElement(string priority, string descr)
+// Currently adds a pure string element to the top of the schedule
+void addCharElement(string priority, string descr) 
 {
 	ep = new Element(1);
 	e = *ep;
@@ -676,8 +686,10 @@ int main(int argc, char* argv[])
 			taskDescr = taskDescr + restDescr; // concatenate together
 			//std::cin.getline(cin,sizeof(taskDescr));
 
-			cout << "Input due date of task in format DDMMYYYY" << endl;
+			cout << "Input due date of task in format DDMMYYYY or a desription of the priority" << endl;
 			cin >> dueDateStr;
+			getline(cin, restDescr);
+			dueDateStr = dueDateStr + restDescr;
 
 			now = time(0);                                        // get current time
 		    ltm = localtime(&now); // How exactly does this work?
