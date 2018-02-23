@@ -11,7 +11,8 @@ This returns a pointer to a string of the form day month year hours:minutes:seco
 
 * Maybe export to file occasionally -> seems like a bad idea, just interact when the user is requesting, but could be explored
 
-(#) Need to convert priority type if priority was updated, but sort was not requested
+(#) Moving item from position 13 to 11 caused a duplication and a deletion. If you move into a position above, you need to delete the original pos + 1
+(#) Moving ^ item caused a priority to mess up. Went from (*0*) to (*0)
 
 Make option to insert at specific spot
 Separate things which are separated by newlines or make option to organize things with number priority. Give everything a sorting priority based on block it is located in
@@ -19,6 +20,7 @@ Swap option using line numbers?
 Need to check against bad inputs - letters other than 'd' for deleting delete 0th item? numbers greater than size of arr give segfault 
 Options to return to main menu
 
+(#) Need to convert priority type if priority was updated, but sort was not requested
 (#) Needs to take white spaces in input task descriptions, 
 (#) Importing and exporting is adding new linebreaks 7 newline difference
 (#) Make option to move
@@ -56,6 +58,14 @@ struct widget_t {
 	double y;
 	int count;
 };
+
+double logBase10(double x)
+{
+	if(x == 0)
+		return 0;
+	else
+		return log10(x);
+} // logBase10
 
 class Element
 {
@@ -395,12 +405,15 @@ void importFile(string fileName)
 		  		sprintf(strDaysTemp, "%d", e.numDays); // convert int to string
 		    	strDays = (string)strDaysTemp; 
 		  		pos = temp.find(strDays); // find the position of the integer in the priority string
-		  		digits = floor(log10(e.numDays)) + 1;
+		  		cout << "pos is " << pos << endl;
+		  		digits = floor(logBase10(e.numDays)) + 1;
+		  		cout << "digits is " << digits << endl;
 		  		e.priority = temp.erase(pos,digits); // delete integer in the string
 		  		//cout << temp << endl;
 		  		e.breakPos = pos;					// position needs to be saved, so we can print it correctly later
 		  		//cout << "pushback2" << endl;
 		  		//arr.push_back(e);
+		  		cout << e.priority << endl;
 		  		//cout << arr.size() << endl;
 		  		//cout << pos << endl;
 		  	} // else if
@@ -422,6 +435,7 @@ void importFile(string fileName)
 		} // if
      } // while  	
 	infile.close();
+	//cout << "Priority of element 3 is: " << arr[3].priority << endl; // has the right priority
 	//cout << "Counted " << newLineCtr << " new lines" << endl;
 	cout << "Finished file import" << endl;
 } // importFile
@@ -652,6 +666,8 @@ int main(int argc, char* argv[])
 		    	{
 		    		cout << arr[i].prefix << "(" << (arr[i].priority).substr(0,arr[i].breakPos) << arr[i].numDays << (arr[i].priority).substr(arr[i].breakPos) << ") " << arr[i].taskDescr << endl; // print priority, number of days, then task description in proper format
 		    		outputFile << "\n" << arr[i].prefix << "(" << (arr[i].priority).substr(0,arr[i].breakPos) << arr[i].numDays << (arr[i].priority).substr(arr[i].breakPos) << ") " << arr[i].taskDescr; // << endl;
+		    		//cout << "BreakPos is " << arr[i].breakPos << endl;
+		    		//cout << "priority is " << arr[i].priority << endl;
 		    	} // else if
 
 		    	else if(arr[i].hasCharNumPriority && arr[i].hasNumPriority) // ^# case  **can make this come after the current else if and only check if it has CharNumPriority
@@ -906,7 +922,7 @@ int main(int argc, char* argv[])
 						sprintf(temp, "%d", num); // convert int to string
 		    			string intPriorityStr = (string)temp; 
 		  				int intPriorityStrpos = (arr[pos].priority).find(intPriorityStr); // find the position of the integer in the priority string
-				  		int digits = floor(log10(num)) + 1;
+				  		int digits = floor(logBase10(num)) + 1;
 				  		arr[pos].priority = (arr[pos].priority).erase(intPriorityStrpos,digits); // delete integer in the string
 				  		arr[pos].breakPos = intPriorityStrpos;					// position needs to be saved, so we can print it correctly later
 				  		arr[pos].numDays = num;
@@ -983,8 +999,11 @@ int main(int argc, char* argv[])
 					{
 						// save, then delete current element, and insert a copy after the specified number
 						Element temporary = arr[pos];
-						arr.insert(arr.begin()+itemNum+1, temporary);
-						arr.erase(arr.begin()+pos);
+						arr.insert(arr.begin()+itemNum+1, temporary); // itemNum = 1 pos = 3
+						if(itemNum+1 < pos) // if request is to insert before item, item number will be +1
+							arr.erase(arr.begin()+pos+1);
+						else
+							arr.erase(arr.begin()+pos);
 						cout << "Successfully moved item" << endl;
 					} // else	
 
