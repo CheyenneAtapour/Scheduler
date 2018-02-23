@@ -1,5 +1,7 @@
 /*
 
+Julian Day 0 = Monday, January 1, 4713 BC, proleptic Julian calendar
+
 char *ctime(const time_t *time);
 This returns a pointer to a string of the form day month year hours:minutes:seconds year\n\0.
 
@@ -9,8 +11,7 @@ This returns a pointer to a string of the form day month year hours:minutes:seco
 
 * Maybe export to file occasionally -> seems like a bad idea, just interact when the user is requesting, but could be explored
 
-If there is newlines, and we haven't seen anything relevant yet, ignore it
-Do not input newlines before header into file ?
+(#) Need to convert priority type if priority was updated, but sort was not requested
 
 Make option to insert at specific spot
 Separate things which are separated by newlines or make option to organize things with number priority. Give everything a sorting priority based on block it is located in
@@ -33,6 +34,8 @@ Options to return to main menu
 (#) Needs file to store tasks, 
 (#) Needs to update days remaining on display 
 (#) Make option to display line numbers for editing
+(#) If there is newlines, and we haven't seen anything relevant yet, ignore it
+(#) Do not input newlines before header into file ? currently doing this
 */
 
 #include <stdio.h>
@@ -284,8 +287,8 @@ void importFile(string fileName)
      while(!(infile.eof()))
      {
 	    getline(infile,inputLine);
-	    if(infile.eof())
-	    	break;
+	    //if(infile.eof())
+	    //	break;
 	    cout << inputLine << endl;
 
 	    if(relevantElementSeen && inputLine.find("\n") && inputLine.length() == 0) // a line just containing a new line, we want to keep formatting
@@ -301,7 +304,7 @@ void importFile(string fileName)
 	    	relevantElementSeen = true;
 	    	if(!headerSeen)
 	    	{
-	    		cout << newLineCtr << " New lines seen before first header" << endl;
+	    		//cout << newLineCtr << " New lines seen before first header" << endl;
 	    		headerSeen = true;
 	    	}
 	  
@@ -419,7 +422,7 @@ void importFile(string fileName)
 		} // if
      } // while  	
 	infile.close();
-	cout << "Counted " << newLineCtr << " new lines" << endl;
+	//cout << "Counted " << newLineCtr << " new lines" << endl;
 	cout << "Finished file import" << endl;
 } // importFile
 
@@ -458,10 +461,10 @@ void displayItemNumbers()
 		arr[i].print();
 	}
 	cout << "\n\n\n\n\n\n\n\n" << endl;
-	cout << i << endl;
-	cout << "The last element in the array is "; 
-	arr[i-1].print();
-	cout << arr[i-1].isNewLine() << endl;
+	//cout << i << endl;
+	//cout << "The last element in the array is "; 
+	//arr[i-1].print();
+	//cout << arr[i-1].isNewLine() << endl;
 } // displayItemNumbers()
 
 void addCharNumElement(string priority, int dueDate, string descr)
@@ -634,8 +637,8 @@ int main(int argc, char* argv[])
 		    		cout << "\n";
 		    		outputFile << endl;
 		    		newLineCtr++;
-		    		if(!firstHeader)
-		    			cout << "Printed " << newLineCtr << " newlines before first header" << endl;
+		    		//if(!firstHeader)
+		    			//cout << "Printed " << newLineCtr << " newlines before first header" << endl;
 		    	} // if
 
 		    	else if(arr[i].isHeaderFun())
@@ -672,7 +675,7 @@ int main(int argc, char* argv[])
 		    cout << "\n\n\n\n\n\n\n\n" << endl;
 		    //outputFile << "\n\n\n\n\n\n\n\n" << endl; dont think this is needed
 		    outputFile.close();
-		    cout << "Exported " << newLineCtr << " new lines" << endl;
+		    //cout << "Exported " << newLineCtr << " new lines" << endl;
 		    //cout << "size after the print: " << arr.size() << endl;
 			break;
 
@@ -725,6 +728,7 @@ int main(int argc, char* argv[])
 		    	else // pure string case
 		    	{
 		    		addCharElement(dueDateStr, taskDescr);
+		    		cout << "Element added\n" << endl;
 		    		break;
 		    	}
 		    } // if
@@ -779,10 +783,11 @@ int main(int argc, char* argv[])
 					geek >> x;					 // ""
 					cout << x << endl;*/
 
-					if(arr[i].numDays > jdnend - jdnstart) // if tempdays casted to an int is bigger than numDays, place element here (before)
+					if(arr[i].hasNumPriority && arr[i].numDays > jdnend - jdnstart) // if tempdays casted to an int is bigger than numDays, place element here (before)
 					{	
 						arr.insert(arr.begin() + i, e);// place here and move everything else back one
 						inserted = 1;
+						cout << "Element added\n" << endl;
 						break;
 					}
 				}
@@ -792,6 +797,7 @@ int main(int argc, char* argv[])
 				//cout << "pushback4" << endl;
 				arr.push_back(e);
 				inserted = 1;
+				cout << "Element added\n" << endl;
 			}
 			if(inserted == 0)
 				//cout << "pushback5" << endl;
@@ -850,7 +856,8 @@ int main(int argc, char* argv[])
 				cout << "Which item number would you like updated? (Enter 'd' to display item numbers)" << endl;
 				cin >> uinput;
 			} // while
-			if(1) // hack
+			
+			if(isNumber(uinput)) // if the number was valid
 			{
 				int pos;
 				stringstream geek(uinput); // convert string to int			
@@ -860,7 +867,8 @@ int main(int argc, char* argv[])
 					cout << "Item number does not exist. Redirecting to main menu" << endl; // instead, we can loop and get proper output, or ask if user wants to return to main menu
 					break;
 				}
-				cout << "What would you like to update?" << endl;
+				cout << "What would you like to update for item number " << pos << "?:" << endl;
+				arr[pos].print();
 				cout << "1) Priority" << endl; // can add option to enter new duedate
 				cout << "2) Task Description" << endl;
 				cout << "3) Location" << endl;
@@ -873,6 +881,8 @@ int main(int argc, char* argv[])
 				{
 					cout << "Enter the new desired priority for item number " << pos << endl;
 					cin >> uinput;
+					getline(cin, restDescr);
+					uinput += restDescr;
 					arr[pos].priority = uinput;
 					// if there is a number in priority, ask if user wants to re-sort
 					if((num = numberFound(arr[pos].priority)) + 1 )
@@ -887,7 +897,7 @@ int main(int argc, char* argv[])
 					// then if input was yes, do the resorting
 					// if there is a number in priority, remove it and put it as numdays. If afterwards priority is "", then this is a purenumber priority.
 					// if no number, pure string priority. If it has a number, potentially need to sort (or rather just place this appropriately)
-					if(sortRequest && numberWasFound)
+					if(numberWasFound) // need to convert its type accordingly
 					{
 						// update everything now, then continue using our current time stamp
 						refreshSchedule(); // all current values are of when this function was invoked
@@ -898,8 +908,9 @@ int main(int argc, char* argv[])
 		  				int intPriorityStrpos = (arr[pos].priority).find(intPriorityStr); // find the position of the integer in the priority string
 				  		int digits = floor(log10(num)) + 1;
 				  		arr[pos].priority = (arr[pos].priority).erase(intPriorityStrpos,digits); // delete integer in the string
-				  		arr[pos].breakPos = pos;					// position needs to be saved, so we can print it correctly later
+				  		arr[pos].breakPos = intPriorityStrpos;					// position needs to be saved, so we can print it correctly later
 				  		arr[pos].numDays = num;
+
 				  		if(arr[pos].priority == "") // pure int case
 				  		{
 				  			arr[pos].convertPureInt();
@@ -907,17 +918,24 @@ int main(int argc, char* argv[])
 				  		else if(intPriorityStrpos == 1 && (arr[pos].priority).length() == 1) // ^# case if intPriorityStrPos is 1 and length of priority is now 1
 				  		{
 				  			arr[pos].convertCharNum();
+				  			//cout << "Priority changed to ^#" << endl;
 				  		}
 				  		else // ^#^ case
 				  		{
 				  			arr[pos].convertStringNum();
+				  			//cout << "converted to ^#^" << endl;
 				  		}
 				  		//arr.push_back(e); // instead of this, need to place in correct spot and delete current
-				  		ep = new Element();
-				  		e = *ep;
-				  		e = arr[pos];
-				  		arr.erase(arr.begin()+pos);
-				  		insertNumPriority(e);
+				  		
+				  		if(sortRequest) // only  update its position if re-sort was requested
+				  		{
+				  			ep = new Element();
+					  		e = *ep;
+					  		e = arr[pos];
+					  		arr.erase(arr.begin()+pos);
+					  		insertNumPriority(e);
+				  		} // if re-sort was requested
+				  		
 
 					} // if a number was found in priority
 					else // no number was found => pure string case
@@ -925,10 +943,14 @@ int main(int argc, char* argv[])
 					cout << "Sucessfully updated item" << endl;
 
 				}// if
+				
 				else if(uinput == "2")
 				{
 					cout << "Enter the new desired task description for item number " << pos << endl;
+					//arr[pos].print();
 					cin >> uinput;
+					getline(cin, restDescr);
+					uinput += restDescr;
 					arr[pos].taskDescr = uinput;
 					cout << "Successfully updated item number " << pos << endl;
 				} // else
@@ -966,8 +988,18 @@ int main(int argc, char* argv[])
 						cout << "Successfully moved item" << endl;
 					} // else	
 
-				} // else if
+				} // else if input was 3 (Update Location)
+				
+				else
+				{
+					cout << "That was not a valid input. Returning to the main menu" << endl;
+				}	
 			} // if
+
+			else
+			{
+				cout << "That was not a valid input. Returning to the main menu" << endl;
+			}
 
 			break;
 
@@ -1009,10 +1041,37 @@ int main(int argc, char* argv[])
 			
 			else // valid number input
 			{
+				cout << "What would you like to do to item number " << itemNum << endl;
+				arr[itemNum].print();
+				cout <<"1) Append Prefix\n2) Change Prefix\n3) Delete Prefix" << endl;
+				cin >> uinput;
+
 				string prefixStr;
-				cout << "Enter the desired prefix for item number " << itemNum << endl;
-				cin >> prefixStr;
-				arr[itemNum].prefix = prefixStr;
+
+				if(uinput == "1") // this actually seems like a strange option
+				{
+					cout << "Enter the desired prefix to append to item number " << itemNum << endl;
+					//arr[itemNum].print();
+					cin >> prefixStr;
+					arr[itemNum].prefix += prefixStr;
+					cout << "Prefix appended for item number " << itemNum << endl;
+				} // if Append Prefix
+
+				else if(uinput == "2")
+				{
+					cout << "Enter the desired prefix for item number " << itemNum << endl;
+					//arr[itemNum].print();
+					cin >> prefixStr;
+					arr[itemNum].prefix = prefixStr;
+					cout << "Prefix changed for item number " << itemNum << endl;
+				} // if Change Prefix
+
+				else
+				{
+					arr[itemNum].prefix.erase();
+					cout << "Successfully deleted prefix of item number " << itemNum << endl;
+				} // else Delete Prefix
+				
 			} // if
 			
 
@@ -1135,7 +1194,7 @@ int main(int argc, char* argv[])
 
 		default:
 		
-			cout << "Error: Please supply a correct integer between 1 and 4.\n" << endl;
+			cout << "Error: Please supply a correct integer between 1 and 8.\n" << endl;
 
 
 	} // switch; determine user action
