@@ -11,8 +11,8 @@ This returns a pointer to a string of the form day month year hours:minutes:seco
 
 * Maybe export to file occasionally -> seems like a bad idea, just interact when the user is requesting, but could be explored
 
-(#) Moving item from position 13 to 11 caused a duplication and a deletion. If you move into a position above, you need to delete the original pos + 1
-(#) Moving ^ item caused a priority to mess up. Went from (*0*) to (*0)
+Option to append to description
+Option to prepend to priority
 
 Make option to insert at specific spot
 Separate things which are separated by newlines or make option to organize things with number priority. Give everything a sorting priority based on block it is located in
@@ -20,6 +20,8 @@ Swap option using line numbers?
 Need to check against bad inputs - letters other than 'd' for deleting delete 0th item? numbers greater than size of arr give segfault 
 Options to return to main menu
 
+(#) Moving item from position 13 to 11 caused a duplication and a deletion. If you move into a position above, you need to delete the original pos + 1
+(#) Moving ^ item caused a priority to mess up. Went from (*0*) to (*0)
 (#) Need to convert priority type if priority was updated, but sort was not requested
 (#) Needs to take white spaces in input task descriptions, 
 (#) Importing and exporting is adding new linebreaks 7 newline difference
@@ -405,15 +407,15 @@ void importFile(string fileName)
 		  		sprintf(strDaysTemp, "%d", e.numDays); // convert int to string
 		    	strDays = (string)strDaysTemp; 
 		  		pos = temp.find(strDays); // find the position of the integer in the priority string
-		  		cout << "pos is " << pos << endl;
+		  		//cout << "pos is " << pos << endl;
 		  		digits = floor(logBase10(e.numDays)) + 1;
-		  		cout << "digits is " << digits << endl;
+		  		//cout << "digits is " << digits << endl;
 		  		e.priority = temp.erase(pos,digits); // delete integer in the string
 		  		//cout << temp << endl;
 		  		e.breakPos = pos;					// position needs to be saved, so we can print it correctly later
 		  		//cout << "pushback2" << endl;
 		  		//arr.push_back(e);
-		  		cout << e.priority << endl;
+		  		//cout << e.priority << endl;
 		  		//cout << arr.size() << endl;
 		  		//cout << pos << endl;
 		  	} // else if
