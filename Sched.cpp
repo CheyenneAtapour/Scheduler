@@ -11,6 +11,11 @@ This returns a pointer to a string of the form day month year hours:minutes:seco
 
 * Maybe export to file occasionally -> seems like a bad idea, just interact when the user is requesting, but could be explored
 
+Make automated tester audit.cpp to check if two schedule files only differ by date in priority
+Allow multiple numbers in priority
+Take care of nested parentheses
+(*) Be careful where isNumber() is used, because isNumber(100) would currently return false
+?Allow nested (()) in priority
 Option to append to description
 Option to prepend to priority
 
@@ -20,6 +25,7 @@ Swap option using line numbers?
 Need to check against bad inputs - letters other than 'd' for deleting delete 0th item? numbers greater than size of arr give segfault 
 Options to return to main menu
 
+(#) Backwards apostrophe (on tilde key top left) on main menu input causes program to infinitely loop, printing out main menu and default case -> this is because we read in expecting int
 (#) Moving item from position 13 to 11 caused a duplication and a deletion. If you move into a position above, you need to delete the original pos + 1
 (#) Moving ^ item caused a priority to mess up. Went from (*0*) to (*0)
 (#) Need to convert priority type if priority was updated, but sort was not requested
@@ -237,7 +243,7 @@ int updateSched(int diff)
 // https://stackoverflow.com/questions/4654636/how-to-determine-if-a-string-is-a-number-with-c
 bool isNumber(string s)
 {
-	if(s.find("00") != std::string::npos)
+	if(s == "00")
 		return false;
 	std::string::const_iterator it = s.begin();
     while (it != s.end() && std::isdigit(*it)) ++it;
@@ -573,8 +579,8 @@ int main(int argc, char* argv[])
 	
 	// do everything after this	
 
-	int command; // store user input
-	
+	string commandStr = ""; // store user input
+	int command;
 
 	int dueDate;
 	string dueDateStr;
@@ -615,8 +621,20 @@ int main(int argc, char* argv[])
 
 	bool firstHeader;
 
-	cout << "\nMain Menu\n1) Display Schedule\n2) Add Item\n3) Remove Item\n4) Update Item\n5) Update Schedule\n6) Add/Change Prefix\n7) Calculate Julian Difference\n8) Add or Remove Linebreak" << endl;
-	cin >> command;
+	// while the command is not a number, display main menu and ask for input
+	while(!isNumber(commandStr))
+	{
+		cout << "\nMain Menu\n1) Display Schedule\n2) Add Item\n3) Remove Item\n4) Update Item\n5) Update Schedule\n6) Add/Change Prefix\n7) Calculate Julian Difference\n8) Add or Remove Linebreak" << endl;
+		cin >> commandStr;
+		if(!isNumber(commandStr))
+			cout << "Error: Please supply a correct integer between 1 and 8.\n" << endl;
+	} // while
+	//cout << "\nMain Menu\n1) Display Schedule\n2) Add Item\n3) Remove Item\n4) Update Item\n5) Update Schedule\n6) Add/Change Prefix\n7) Calculate Julian Difference\n8) Add or Remove Linebreak" << endl;
+	//cin >> command;
+
+	// convert command into an int
+	stringstream geek(commandStr); // convert string to int						
+	geek >> command;
 
 	switch ( command ) 
 	{
@@ -1216,6 +1234,7 @@ int main(int argc, char* argv[])
 		default:
 		
 			cout << "Error: Please supply a correct integer between 1 and 8.\n" << endl;
+			break;
 
 
 	} // switch; determine user action
