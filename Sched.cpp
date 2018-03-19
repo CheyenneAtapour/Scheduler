@@ -11,6 +11,8 @@ This returns a pointer to a string of the form day month year hours:minutes:seco
 
 * Maybe export to file occasionally -> seems like a bad idea, just interact when the user is requesting, but could be explored
 
+Sched.cpp to warn you x days before things like your car insurance expires (invisible option, but in that case, would need to export extra information to file)
+Problem with numDays when updateSched() makes a priority negative
 Make automated tester audit.cpp to check if two schedule files only differ by date in priority
 Allow multiple numbers in priority
 Take care of nested parentheses
@@ -277,7 +279,7 @@ int numberFound(string s)
 			temp += s.substr(i,1);
 			i++;
 		} // while
-		if(temp.find("00") != std::string::npos || s.find("-0") != std::string::npos) // if 00 or -0 is found, do not treat this as a valid int
+		if(temp == "00" || s.find("-0") != std::string::npos) // if the pure number part is 00 or -0 is found, do not treat this as a valid int
 			return -1;
 		/*if(pos-1 >= 0 && s.substr(pos-1,1) == "-")
 		{
@@ -424,6 +426,12 @@ void importFile(string fileName)
 		  		//cout << e.priority << endl;
 		  		//cout << arr.size() << endl;
 		  		//cout << pos << endl;
+		  		if(pos > 0 && pos-1 < e.priority.length() && e.priority[pos-1] == '-') 										// need to extract the negative
+		  		{
+		  			e.numDays *= -1;
+		  			e.breakPos -= 1;
+		  			e.priority = e.priority.erase(pos-1, 1);
+		  		} // if -number case
 		  	} // else if
 
 		  	else
