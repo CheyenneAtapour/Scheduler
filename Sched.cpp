@@ -27,6 +27,7 @@ Swap option using line numbers?
 Need to check against bad inputs - letters other than 'd' for deleting delete 0th item? numbers greater than size of arr give segfault 
 Options to return to main menu
 
+(#) Fix logic with inputting ^# case and ^#^ case
 (#) Backwards apostrophe (on tilde key top left) on main menu input causes program to infinitely loop, printing out main menu and default case -> this is because we read in expecting int
 (#) Moving item from position 13 to 11 caused a duplication and a deletion. If you move into a position above, you need to delete the original pos + 1
 (#) Moving ^ item caused a priority to mess up. Went from (*0*) to (*0)
@@ -243,6 +244,7 @@ int updateSched(int diff)
 } // updateSched()
 
 // https://stackoverflow.com/questions/4654636/how-to-determine-if-a-string-is-a-number-with-c
+// negative numbers return false
 bool isNumber(string s)
 {
 	if(s == "00")
@@ -255,7 +257,7 @@ bool isNumber(string s)
 Element *ep;
 Element e;
 
-// returns a number if one is found in string s
+// returns a non-negative number if a number is found in string s, otherwise -1
 int numberFound(string s)
 {
 	int i;
@@ -281,7 +283,7 @@ int numberFound(string s)
 		} // while
 		if(temp == "00" || s.find("-0") != std::string::npos) // if the pure number part is 00 or -0 is found, do not treat this as a valid int
 			return -1;
-		/*if(pos-1 >= 0 && s.substr(pos-1,1) == "-")
+		/*if(pos-1 >= 0 && s.substr(pos-1,1) == "-") // don't really want to return a negative number here
 		{
 			temp = "-" + temp;
 		}*/
@@ -497,21 +499,6 @@ void displayItemNumbers()
 	//cout << arr[i-1].isNewLine() << endl;
 } // displayItemNumbers()
 
-void addCharNumElement(string priority, int dueDate, string descr)
-{
-
-} // addCharNumElement()
-
-// Currently adds a pure string element to the top of the schedule
-void addCharElement(string priority, string descr) 
-{
-	ep = new Element(1);
-	e = *ep;
-	e.priority = priority;
-	e.taskDescr = descr;
-	arr.insert(arr.begin(), e);
-} // addCharElement()
-
 // Update everything, then insert, respecting order of numbers
 void insertNumPriority(Element e)
 {
@@ -536,6 +523,33 @@ void insertNumPriority(Element e)
 	if(inserted == 0)
 		arr.push_back(e);
 }
+
+// add ^#^ element to its appropriate spot based on numDays
+void addStrNumElement(string priority, int numDays, string descr, int breakPos)
+{
+	//ep = 
+} // addStrNumElement()
+
+// add ^# element to its appropriate spot based on numDays
+void addCharNumElement(string priority, int numDays, string descr)
+{
+	ep = new Element("s");
+	e = *ep;
+	e.priority = priority;
+	e.taskDescr = descr;
+	e.numDays = numDays;
+	insertNumPriority(e);
+} // addCharNumElement()
+
+// Currently adds a pure string element to the top of the schedule
+void addCharElement(string priority, string descr) 
+{
+	ep = new Element(1);
+	e = *ep;
+	e.priority = priority;
+	e.taskDescr = descr;
+	arr.insert(arr.begin(), e);
+} // addCharElement()
 
 void refreshSchedule()
 {
@@ -727,11 +741,9 @@ int main(int argc, char* argv[])
 		case 2:
 
 			cout << "Enter Description of Task" << endl;
-			//cin >> taskDescr;
 			cin >> taskDescr; // get the line up to a whitespace
 			getline(cin, restDescr); // get the rest of the line
 			taskDescr = taskDescr + restDescr; // concatenate together
-			//std::cin.getline(cin,sizeof(taskDescr));
 
 			cout << "Input due date of task in format DDMMYYYY or a desription of the priority" << endl;
 			cin >> dueDateStr;
@@ -758,17 +770,57 @@ int main(int argc, char* argv[])
 		    charnum = false;
 		    // dueDate is a string, check if it is a ^# or pure string case (that is, if it is not a pure number)
 		    if(!isNumber(dueDateStr))
-		    { 
+		    {
+		    	//cout << "determined its not a number" << endl; 
 		    	charnum = true;
 		        // dueDate is not a string, so check if it is ^# case. If not, it is a pure string
-		    	if(isNumber(dueDateStr.substr(1))) // ^# case
+		    	if(dueDateStr.length() > 1 && isNumber(dueDateStr.substr(1))) // ^# case // but ^# case wouldn't be a due date, it would be a different priority
 		    	{
+		    		//cout << "mistakenly thought it was a number" << endl;
 		    		// convert dueDateStr.substr(1) into an int, assign this to a new element's numdays, assign dueDateStr[0] to e's priority, and rest to descr
 		    		stringstream geek(dueDateStr.substr(1)); // convert string to int						
-					geek >> dueDate;					 // ""
-					//addCharNumElement(dueDateStr.substr(0,1), dueDate, taskDescr);
-					//break; // breaks out of this insertion request
+					geek >> dueDate;					 // dueDate actually contains what should be numDays
+					addCharNumElement(dueDateStr.substr(0,1), dueDate, taskDescr);
+					cout << "Element added\n" << endl;
+					break; // breaks out of this insertion request
 		    	}
+		    	
+		    	else if(numberFound(dueDateStr)+1) // ^#^ case
+		    	{
+		    		// extract number and string    				// NOTE: dueDateStr is everything that would show up in (...)
+			  		char strDaysTemp[2000];
+			  		string strDays;
+			  		int pos;
+			  		int digits;
+			  		ep = new Element(true, 0);
+			  		e = *ep;
+			  		e.taskDescr = taskDescr;
+			  		e.numDays = numberFound(dueDateStr);
+			  		sprintf(strDaysTemp, "%d", e.numDays); // convert int to string
+			    	strDays = (string)strDaysTemp; 
+			  		pos = dueDateStr.find(strDays); // find the position of the integer in the priority string
+			  		//cout << "pos is " << pos << endl;
+			  		digits = floor(logBase10(e.numDays)) + 1;
+			  		//cout << "digits is " << digits << endl;
+			  		e.priority = dueDateStr.erase(pos,digits); // delete integer in the string
+			  		//cout << temp << endl;
+			  		e.breakPos = pos;					// position needs to be saved, so we can print it correctly later
+			  		//cout << "pushback2" << endl;
+			  		//arr.push_back(e);
+			  		//cout << e.priority << endl;
+			  		//cout << arr.size() << endl;
+			  		//cout << pos << endl;
+			  		if(pos > 0 && pos-1 < e.priority.length() && e.priority[pos-1] == '-') 										// need to extract the negative
+			  		{
+			  			e.numDays *= -1;
+			  			e.breakPos -= 1;
+			  			e.priority = e.priority.erase(pos-1, 1);
+			  		} // if -number case
+		  	        insertNumPriority(e);
+		  	        cout << "Element added\n" << endl;
+		  	        break;
+		    	} // else if
+
 		    	else // pure string case
 		    	{
 		    		addCharElement(dueDateStr, taskDescr);
