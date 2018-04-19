@@ -2,21 +2,21 @@
 
 Julian Day 0 = Monday, January 1, 4713 BC, proleptic Julian calendar
 
+
+() Displaying, (case 1) (for now) will be the only time the data is written to file. Should update schedule also update the file?
+(*) See if this will run on a windows environment (runs on linux and mac)
 char *ctime(const time_t *time);
 This returns a pointer to a string of the form day month year hours:minutes:seconds year\n\0.
 
 * Idea to keep extra features hidden from stdout and instead written in the readme 
-
 * Probably need to store date info in case exported to file, wait a day, then import to program. Probably means we need timestamp of file modification
-
 * Maybe export to file occasionally -> seems like a bad idea, just interact when the user is requesting, but could be explored
 
-Sched.cpp to warn you x days before things like your car insurance expires (invisible option, but in that case, would need to export extra information to file)
-Problem with numDays when updateSched() makes a priority negative
-Make automated tester audit.cpp to check if two schedule files only differ by date in priority
+* Sched.cpp to warn you x days before things like your car insurance expires (invisible option, but in that case, would need to export extra information to file)
+
+Empty parens with no description causes an error, along with some other errors observed in files in the development directory
 Allow multiple numbers in priority
 Take care of nested parentheses
-(*) Be careful where isNumber() is used, because isNumber(100) would currently return false
 ?Allow nested (()) in priority
 Option to append to description
 Option to prepend to priority
@@ -27,6 +27,9 @@ Swap option using line numbers?
 Need to check against bad inputs - letters other than 'd' for deleting delete 0th item? numbers greater than size of arr give segfault 
 Options to return to main menu
 
+(#) Be careful where isNumber() is used, because isNumber(100) would currently return false
+(#) Make automated tester audit.cpp to check if two schedule files only differ by date in priority
+(#) Problem with numDays when updateSched() makes a priority negative
 (#) Fix logic with inputting ^# case and ^#^ case
 (#) Backwards apostrophe (on tilde key top left) on main menu input causes program to infinitely loop, printing out main menu and default case -> this is because we read in expecting int
 (#) Moving item from position 13 to 11 caused a duplication and a deletion. If you move into a position above, you need to delete the original pos + 1
@@ -338,7 +341,7 @@ void importFile(string fileName)
 	    	arr.push_back(e);
 	    }
 
-	    else if((pos = inputLine.find("(")) != std::string::npos) //  we are at the first important line of the file
+	    else if(( (pos = inputLine.find("(") ) != std::string::npos) && pos == 0) //  we are at the first important line of the file
 	    {	// need to see if priority is an integer, make a new element object, and assign priority and description. Note that items will be sorted.
 	      	// could also take care of case where items are not sorted
 	      	// need to take care of ^# case
@@ -678,8 +681,9 @@ int main(int argc, char* argv[])
 		    }
 
 		    outputFile.open("schedule.txt");
-			cout << "\n\n\n\n" << "*******************SCHEDULE*************************" << "\n" << (curJulianDay = computejdn(currentDay,currentMonth, currentYear)) << "\n\n" << endl; // for the legacy
-			outputFile /*<< "\n\n\n\n" */<< "*******************SCHEDULE*************************" << "\n" << curJulianDay << "\n" << endl;
+			cout << "\n\n\n\n" << "*******************SCHEDULE*************************" << "\n" << (curJulianDay = computejdn(currentDay,currentMonth,currentYear)) << /*"\n" // have a new line and then the date?*/ " (" << currentMonth << "/" << currentDay << "/" << currentYear << ")" << "\n\n" << endl; // for the legacy. Change this and next line for desired date display
+			outputFile /*<< "\n\n\n\n" */<< "*******************SCHEDULE*************************" << "\n" << curJulianDay << /*"\n" // have a new line and then the date?*/ " (" << currentMonth << "/" << currentDay << "/" << currentYear << ")" << "\n" << endl; // change this line for desired date display (in file)
+			
 			//if(!importedFile)  // We want to control how the schedule is formatted, so we don't need this right now 
 			//	outputFile << "\n\n" << endl; // these two are extra newlines if file was imported
 
