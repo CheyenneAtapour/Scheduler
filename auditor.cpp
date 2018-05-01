@@ -340,7 +340,7 @@ void importFile(string fileName, vector<Element> * array)
 	    	array->push_back(e);
 	    } // if
 
-	    else if(inputLine.substr(0,1).compare("~") == 0)
+	    else if(inputLine.substr(0,1).compare("~") == 0 || inputLine.substr(0,1).compare("[") == 0)
 	    {
 	    	relevantElementSeen = true;
 	    	if(!headerSeen)
