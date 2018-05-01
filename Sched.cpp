@@ -324,7 +324,7 @@ void importFile(string fileName)
 	    	arr.push_back(e);
 	    } // if
 
-	    else if(inputLine.substr(0,1).compare("~") == 0)
+	    else if(inputLine.substr(0,1).compare("~") == 0 || inputLine.substr(0,1).compare("[") == 0)
 	    {
 	    	relevantElementSeen = true;
 	    	if(!headerSeen)
