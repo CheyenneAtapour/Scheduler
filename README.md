@@ -1,5 +1,8 @@
 # Scheduler
 Cheyenne's Scheduler
+
+(*) Scheduler.out executable needs to be re-compiled as of 5/1/18
+
 General Notes:
 
 Main menu consists of the following options:
@@ -55,5 +58,3 @@ updates the numbers in all priorities in schedule by the number supplied by the 
 
 problems:
 -unsafe to use. Need to automate this process, which is made necessary by flaw in being offline for more than a day and trying to reimport
-
-
