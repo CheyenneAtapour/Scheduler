@@ -253,7 +253,7 @@ bool isNumber(string s)
 	if(s == "00")
 		return false;
 	std::string::const_iterator it = s.begin();
-    while (it != s.end() && std::isdigit(*it)) ++it;
+    while (it != s.end() && isdigit(*it)) ++it;
     return !s.empty() && it == s.end();
 } // isNumber()
 
@@ -299,22 +299,69 @@ int numberFound(string s)
 	return -1;
 } // numberFound()
 
+bool isChar(char c)
+{
+	if(c == '0' || c == '1' || c == '2' || c == '3' || c == '4' || c == '5' || c == '6' || c == '7' || c == '8' || c == '9')
+		return true;
+	return false;
+} // isChar()
+
+
+time_t now; 
+tm *ltm;
+int dd;
+int mm;
+int yyyy;
+int currentDay;
+int currentMonth;
+int currentYear;
+
+
 void importFile(string fileName)
 {
 	string inputLine;
 	ifstream infile;
+	int oldJulNum;
 	//infile.open ("scheddata.txt");
 	infile.open(fileName);
 	int pos;
 	int newLineCtr = 0;
 	bool headerSeen = false;
 	bool relevantElementSeen = false;
+	bool oldFile = false;
+	int dateDiff;
+
      while(!(infile.eof()))
      {
 	    getline(infile,inputLine);
 	    //if(infile.eof())
 	    //	break;
-	    cout << inputLine << endl;
+	    //cout << inputLine << endl;
+	    if(inputLine == "*******************SCHEDULE*************************")
+	    {
+	    	getline(infile,inputLine); // get the next line, which should contain the julian number
+	    	string oldJulStr = "";
+	    	
+	    	int p = 0;
+	    	while(isChar(inputLine[p]))
+	    	{
+	    		oldJulStr += inputLine[p]; 
+	    		p++;
+	    	} // while
+	    	
+	    	stringstream geek(oldJulStr); // convert string to int						 
+			geek >> oldJulNum; // oldJulNum now needs to be tested against current date
+			
+			now = time(0);                                        // get current time
+			ltm = localtime(&now);
+			currentDay = ltm->tm_mday;                     // These are set when main program is run
+			currentMonth = ltm->tm_mon + 1;
+			currentYear = ltm->tm_year + 1900;
+			int currentDate = computejdn(currentDay, currentMonth, currentYear);
+			dateDiff = currentDate - oldJulNum;
+			if(dateDiff > 0) // need to be careful about changing time zones when this is caclulated
+				oldFile = true;
+	    } // if this is a file that was created by this program
 
 	    if(relevantElementSeen && inputLine.find("\n") && inputLine.length() == 0) // a line just containing a new line, we want to keep formatting
 	    {
@@ -459,16 +506,23 @@ void importFile(string fileName)
 	//cout << "Priority of element 3 is: " << arr[3].priority << endl; // has the right priority
 	//cout << "Counted " << newLineCtr << " new lines" << endl;
 	cout << "Finished file import" << endl;
+	
+	if(oldFile) // prompt user to update the schedule if old file input
+	{
+		int choice;
+		cout << "This file is " << dateDiff << " days old." << endl;
+		cout << "Would you like to update the priorities?" << endl;
+		cout << "1. Yes" << endl;
+		cout << "2. No" << endl;
+		cin >> choice;
+		if (choice == 1)
+		{
+			updateSched(dateDiff);
+			cout << "Updated the priorities." << endl;
+		}
+	}
 } // importFile
 
-time_t now; 
-tm *ltm;
-int dd;
-int mm;
-int yyyy;
-int currentDay;
-int currentMonth;
-int currentYear;
 
 // Displays the item numbers
 void displayItemNumbers()
