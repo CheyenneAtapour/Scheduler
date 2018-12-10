@@ -1,8 +1,6 @@
 # Scheduler
 Cheyenne's Scheduler
 
-(*) Scheduler.out executable needs to be re-compiled as of 5/1/18
-
 General Notes:
 
 Main menu consists of the following options:
