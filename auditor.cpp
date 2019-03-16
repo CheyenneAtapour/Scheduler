@@ -386,7 +386,10 @@ void importFile(string fileName, vector<Element> * array)
 				// create new element with this priority and the description found in the rest of inputLine	
 				ep = new Element();
 				e = *ep;
-				e.taskDescr = inputLine.substr(j+2); // +2 because it is on ')', and the next char is a space
+				if(inputLine.length() >= j+2) // taking care of case where there is no task description (4 more cases of this follow in this function)
+					e.taskDescr = inputLine.substr(j+2); // +2 because it is on ')', and the next char is a space
+				else
+					e.taskDescr = "";
 				e.numDays = x;
 				//cout << "pushback" << endl;
 				//arr.push_back(e);
@@ -402,7 +405,10 @@ void importFile(string fileName, vector<Element> * array)
 		  			geek >> y;
 		  			ep = new Element();
 		  			e = *ep;
-		  			e.taskDescr = inputLine.substr(j+2);
+		  			if(inputLine.length() >= j+2) // taking care of case where there is no task description (4 more cases of this follow in this function)
+						e.taskDescr = inputLine.substr(j+2); // +2 because it is on ')', and the next char is a space
+					else
+						e.taskDescr = "";
 		  			e.numDays = y; // negative already taken care of
 		  		}
 		  		
@@ -413,7 +419,10 @@ void importFile(string fileName, vector<Element> * array)
 			  		geek >> x;
 			  		ep = new Element("s");
 			  		e = *ep;
-			  		e.taskDescr = inputLine.substr(j+2);
+			  		if(inputLine.length() >= j+2) // taking care of case where there is no task description (4 more cases of this follow in this function)
+						e.taskDescr = inputLine.substr(j+2); // +2 because it is on ')', and the next char is a space
+					else
+						e.taskDescr = "";
 			  		e.numDays = x;
 			  		e.priority = temp.substr(0,1);
 			  		//cout << "pushback1" << endl;
@@ -431,7 +440,10 @@ void importFile(string fileName, vector<Element> * array)
 		  		int digits;
 		  		ep = new Element(true, 0);
 		  		e = *ep;
-		  		e.taskDescr = inputLine.substr(j+2);
+		  		if(inputLine.length() >= j+2) // taking care of case where there is no task description (4 more cases of this follow in this function)
+					e.taskDescr = inputLine.substr(j+2); // +2 because it is on ')', and the next char is a space
+				else
+					e.taskDescr = "";
 		  		e.numDays = numberFound(temp);
 		  		sprintf(strDaysTemp, "%d", e.numDays); // convert int to string
 		    	strDays = (string)strDaysTemp; 
@@ -460,7 +472,10 @@ void importFile(string fileName, vector<Element> * array)
 		  		// create new element with other priority and the description found in the rest of inputLine
 		  		ep = new Element(1);
 		  		e = *ep;
-		  		e.taskDescr = inputLine.substr(j+2);
+		  		if(inputLine.length() >= j+2) // taking care of case where there is no task description (4 more cases of this follow in this function)
+					e.taskDescr = inputLine.substr(j+2); // +2 because it is on ')', and the next char is a space
+				else
+					e.taskDescr = "";
 		  		e.priority = temp;
 		  		//cout << "pushback3" << endl;
 		  		//arr.push_back(e);
