@@ -14,7 +14,6 @@ This returns a pointer to a string of the form day month year hours:minutes:seco
 
 * Sched.cpp to warn you x days before things like your car insurance expires (invisible option, but in that case, would need to export extra information to file)
 
-Empty parens with no description causes an error, along with some other errors observed in files in the development directory
 Allow multiple numbers in priority
 Take care of nested parentheses
 ?Allow nested (()) in priority
@@ -27,6 +26,8 @@ Swap option using line numbers?
 Need to check against bad inputs - letters other than 'd' for deleting delete 0th item? numbers greater than size of arr give segfault 
 Options to return to main menu
 
+[Fixed Issues]
+(#) Empty parens with no description causes an error, along with some other errors observed in files in the development directory
 (#) Be careful where isNumber() is used, because isNumber(100) would currently return false
 (#) Make automated tester audit.cpp to check if two schedule files only differ by date in priority
 (#) Problem with numDays when updateSched() makes a priority negative
