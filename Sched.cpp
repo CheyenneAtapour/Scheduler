@@ -14,6 +14,7 @@ This returns a pointer to a string of the form day month year hours:minutes:seco
 
 * Sched.cpp to warn you x days before things like your car insurance expires (invisible option, but in that case, would need to export extra information to file)
 
+Try, Catch block to prompt import of schedule.txt automatically so users can just run Sched without supplying command-line arguments
 Allow multiple numbers in priority
 Take care of nested parentheses
 ?Allow nested (()) in priority
