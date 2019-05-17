@@ -15,6 +15,9 @@ This returns a pointer to a string of the form day month year hours:minutes:seco
 * Sched.cpp to warn you x days before things like your car insurance expires (invisible option, but in that case, would need to export extra information to file)
 
 Try, Catch block to prompt import of schedule.txt automatically so users can just run Sched without supplying command-line arguments
+Function to calculate number of days between two given dates
+Function to display calendar visual generated from parsing schedule
+Function to output availability generated from parsing schedule in format: Monday: x:xx to x:xx free, Tuesday: x:xx to x:xx free, etc.
 Allow multiple numbers in priority
 Take care of nested parentheses
 ?Allow nested (()) in priority
